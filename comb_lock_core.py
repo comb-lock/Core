@@ -49,14 +49,21 @@ class Core(object):
     def add_record(self, secret, note, loctation='./Lock'):
         if (os.path.isfile(loctation) and os.access(loctation, os.R_OK)
                 and os.access(loctation, os.W_OK)):
-            with open(loctation, 'w+') as f:
+            with open(loctation, 'r+') as f:
                 lines = f.readlines()
-                last_line = lines[-1]
-                if self.decrypt(last_line.strip()) != 'success':
+                last_line = lines[-1].strip()
+                if self.decrypt(last_line) != 'success':
                     return 'The root password is wrong!'
                 lines.pop()
                 lines.append(self.encrypt(secret) + ',' + self.encrypt(note))
                 lines.append(last_line)
+                f.seek(0)
+                f.truncate()
+                # print(lines)
+                for i in lines:
+                    i = i.strip()
+                    f.write(i + '\n')
+
             return 'The new record has been add successfully!'
         else:
             return 'The Lock file is unavailable. Please check the path and permission to read & write.'
@@ -64,24 +71,25 @@ class Core(object):
     def read_records(self, loctation='./Lock'):
         if (os.path.isfile(loctation) and os.access(loctation, os.R_OK)):
             with open(loctation, 'r') as f:
-                lines = f.readlines
+                lines = f.readlines()
                 last_line = lines[-1]
                 if self.decrypt(last_line.strip()) != 'success':
                     return 'The root password is wrong!'
                 lines.pop()
                 records = []
-                for i in range(len(lines)):
-                    temp = lines[i]
-                    p = temp.find(',')
-                    temp_secret = self.decrypt(temp[0:p])
-                    temp_note = self.decrypt(temp[p + 1:len(temp) - len(temp_secret) + 1])
+                for i in lines:
+                    p = i.find(',')
+                    temp_secret = self.decrypt(i[0:p])
+                    temp_note = self.decrypt(
+                        i[p + 1:len(i) -
+                          1])  # There's a line break at the end, so minus 1
                     records.append([temp_secret, temp_note])
                 return records
         else:
-             return 'The Lock file is unavailable. Please check the path and permission to read.'
+            return 'The Lock file is unavailable. Please check the path and permission to read.'
 
     def add_new_document(self, loctation):
-        if(not os.path.isfile(loctation)):
+        if (not os.path.isfile(loctation)):
             with open(loctation, 'w+') as f:
                 f.write(self.encrypt('success'))
             return 'The new encrypted file has been created successfully!'
@@ -94,6 +102,17 @@ if __name__ == "__main__":
     import sys
     core = Core(sys.argv[1])
     if sys.argv[2] == 'add':
-        print('A new record has benn add as: ' + core.encrypt(sys.argv[3]))
+        if (len(sys.argv) == 5):
+            ans = core.add_record(sys.argv[3], sys.argv[4])
+        else:
+            ans = core.add_record(sys.argv[3], sys.argv[4], sys.argv[5])
+        print(ans)
     if sys.argv[2] == 'read':
-        print('The record is : ' + core.decrypt(sys.argv[3]))
+        if (len(sys.argv) == 3):
+            ans = core.read_records()
+        else:
+            ans = core.read_records(sys.argv[3])
+        print(ans)
+    if sys.argv[2] == 'new':
+        ans = core.add_new_document(sys.argv[3])
+        print(ans)
