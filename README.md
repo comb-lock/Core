@@ -1,4 +1,4 @@
-[中文版](/README-CN.md))
+[中文版](/README-CN.md)
 
 ## Description of core functions
 The core function of Comb Lock consists of two parts: encryption and decryption, save and read.
